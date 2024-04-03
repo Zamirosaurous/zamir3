@@ -1,8 +1,8 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useState } from 'react';
+import Alert from '@mui/material/Alert';
 import ConfettiExplosion from 'react-confetti-explosion';
 import { Trans, useTranslation } from 'react-i18next';
 import AddCircleIcon from '@mui/icons-material/AddCircle';
-import BabyChangingStationIcon from '@mui/icons-material/BabyChangingStation';
 import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
 import EditIcon from '@mui/icons-material/Edit';
 import HeartBrokenIcon from '@mui/icons-material/HeartBroken';
@@ -23,25 +23,28 @@ export default function DatasetActions({ dataset }) {
   const { t } = useTranslation();
   const deleteDataset = useDeleteDataset();
   const isDatasetCopyEnabledInWorkspace = useWorkspaceData()?.datasetCopy ?? false;
-  const [showConfetti, setShowConfetti] = React.useState(false);
+
+  const [showConfetti, setShowConfetti] = useState(false);
+  const [showMissingImplementation, setShowMissingImplementation] = useState(false);
+
+  const notYetImplemented = useCallback(() => {
+    setShowMissingImplementation(true);
+  }, []);
 
   const handleClicked = () => {
-    if (showConfetti) {
-      setShowConfetti(false);
-    } else {
-      setShowConfetti(true);
-    }
+    setShowConfetti(true);
   };
+
   const askConfirmationToDeleteDialog = useCallback(
     async (event, dataset) => {
       event.stopPropagation();
       const impactedScenariosWarning = isDatasetCopyEnabledInWorkspace
         ? ''
         : ' ' + // Space character is here on purpose, to separate concatenated sentences in confirmation dialog body
-          t(
-            'commoncomponents.datasetmanager.dialogs.delete.impactedScenariosWarning',
-            'All the scenarios using this dataset will be impacted.'
-          );
+        t(
+          'commoncomponents.datasetmanager.dialogs.delete.impactedScenariosWarning',
+          'All the scenarios using this dataset will be impacted.'
+        );
       const dialogProps = {
         id: 'delete-dataset',
         component: 'div',
@@ -73,29 +76,26 @@ export default function DatasetActions({ dataset }) {
 
   return (
     <ButtonGroup>
+      {showMissingImplementation && <Alert severity="warning">Not yet implemented</Alert>}
       {showConfetti && <ConfettiExplosion />}
       <IconButton onClick={handleClicked}>
         <HeartBrokenIcon color="primary" />
       </IconButton>
-      <IconButton>
-        <BabyChangingStationIcon color="primary" />
-      </IconButton>
-      <IconButton>
+      <IconButton onClick={notYetImplemented}>
         <RefreshIcon color="primary" />
       </IconButton>
-      <IconButton>
+      <IconButton onClick={notYetImplemented}>
         <EditIcon color="primary" />
       </IconButton>
-      <IconButton>
+      <IconButton onClick={notYetImplemented}>
         <AddCircleIcon color="primary" />
       </IconButton>
-      <IconButton>
+      <IconButton onClick={notYetImplemented}>
         <ShareIcon color="primary" />
       </IconButton>
       <IconButton onClick={(event) => askConfirmationToDeleteDialog(event, dataset)}>
-        {/* deleteDataset(dataset.datasetId?) */}
         <DeleteForeverIcon color="primary" />
       </IconButton>
     </ButtonGroup>
-  );
+  )
 }
