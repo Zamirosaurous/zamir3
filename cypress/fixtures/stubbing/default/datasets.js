@@ -1,5 +1,6 @@
 // Copyright (c) Cosmo Tech.
 // Licensed under the MIT license.
+import { ROLES } from '../../../commons/constants/generic/TestConstants';
 
 // Legacy dataset with API v2.x structure
 export const LEGACY_DATASET_V2 = {
