@@ -5,7 +5,7 @@ import { Controller } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import PropTypes from 'prop-types';
 import { Grid, Typography } from '@mui/material';
-import { BasicTextInput, UploadFile, BasicEnumInput } from '@cosmotech/ui';
+import { BasicTextInput, UploadFile, BasicEnumInput, MultiSelect } from '@cosmotech/ui';
 import { TranslationUtils } from '../../../../../../utils';
 import { FileManagementUtils } from '../../../../../../utils/FileManagementUtils';
 import { useDatasetCreationParameters } from './DatasetCreationParametersHook';
@@ -68,6 +68,22 @@ export const DatasetCreationParameters = ({ dataSourceRunTemplates }) => {
                     value={value ?? enumValues?.[0]?.key ?? ''}
                     changeEnumField={onChange}
                     textFieldProps={{ disabled: false, id: `enum-input-${parameterId}` }}
+                    enumValues={enumValues}
+                  />
+                </Grid>
+              );
+            } else if (inputType === 'list') {
+              const enumValues = getParameterEnumValues(dataSourceRunTemplates, parameterId);
+              return (
+                <Grid item xs={12} sx={{ pt: 2 }}>
+                  <MultiSelect
+                    id={parameterId}
+                    key={parameterId}
+                    label={t(parameterTranslationKey, parameterId)}
+                    tooltipText={t(TranslationUtils.getParameterTooltipTranslationKey(parameterId), '')}
+                    value={value ?? []}
+                    changeValues={onChange}
+                    textFieldProps={{ disabled: false, id: `multi-values-input-${parameterId}` }}
                     enumValues={enumValues}
                   />
                 </Grid>
