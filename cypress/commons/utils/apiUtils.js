@@ -2,7 +2,12 @@
 // Licensed under the MIT license.
 import { POLLING_START_DELAY } from '../../../src/services/config/FunctionalConstants';
 import utils from '../../commons/TestUtils';
-import { DEFAULT_DATASET, SCENARIO_EXAMPLE, SCENARIO_RUN_EXAMPLE } from '../../fixtures/stubbing/default';
+import {
+  DEFAULT_DATASET,
+  DEFAULT_RUNNER,
+  SCENARIO_EXAMPLE,
+  SCENARIO_RUN_EXAMPLE,
+} from '../../fixtures/stubbing/default';
 import { API_ENDPOINT, API_REGEX, AUTH_QUERY_URL, URL_POWERBI, URL_ROOT } from '../constants/generic/TestConstants';
 import { stub } from '../services/stubbing';
 import { authUtils } from './authUtils';
@@ -282,7 +287,7 @@ const interceptUpdateRunnerDefaultSecurity = (expectedDefaultSecurity) => {
   cy.intercept({ method: 'POST', url: API_REGEX.RUNNER_DEFAULT_SECURITY, times: 1 }, (req) => {
     const newDefaultSecurity = req.body.role;
     if (expectedDefaultSecurity) expect(newDefaultSecurity).to.deep.equal(expectedDefaultSecurity);
-    if (stub.isEnabledFor('UPDATE_RUNNER')) req.reply(newDefaultSecurity);
+    if (stub.isEnabledFor('UPDATE_DATASET')) req.reply(newDefaultSecurity);
   }).as(alias);
   return alias;
 };
@@ -292,7 +297,7 @@ const interceptUpdateRunnerACLSecurity = (expectedACLSecurity) => {
   cy.intercept({ method: 'POST', url: API_REGEX.RUNNER_SECURITY_ACL, times: 1 }, (req) => {
     const newACLSecurityItem = req.body;
     if (expectedACLSecurity) expect(newACLSecurityItem).to.deep.equal(expectedACLSecurity);
-    if (stub.isEnabledFor('UPDATE_RUNNER')) req.reply(newACLSecurityItem);
+    if (stub.isEnabledFor('UPDATE_DATASET')) req.reply(newACLSecurityItem);
   }).as(alias);
   return alias;
 };
@@ -581,6 +586,57 @@ const interceptDeleteDataset = (datasetName) => {
   return alias;
 };
 
+// Parameters:
+//   - options: dict with properties:
+//     - id (optional): id of the runner to create
+//     - validateRequest (optional): a function, taking the request object as argument, that can be used to perform
+//       cypress checks on the content of the intercepted query
+//     - customRunnerPatch (optional): data to set in the request body, you can use this option to replace the original
+//       content of the query
+const interceptCreateRunner = (options = {}) => {
+  const alias = forgeAlias('reqCreateRunner');
+  cy.intercept({ method: 'POST', url: API_REGEX.RUNNERS, times: 1 }, (req) => {
+    if (options?.validateRequest) options?.validateRequest(req);
+    const runnerId = options.id ?? `r-stbd${utils.randomStr(4)}`;
+    if (stub.isEnabledFor('CREATE_DATASET')) {
+      const runner = {
+        ...DEFAULT_RUNNER,
+        ...req.body,
+        id: runnerId,
+        security: { default: 'none', accessControlList: [{ id: stub.getUser().email, role: 'admin' }] },
+        ...options?.customRunnerPatch,
+      };
+
+      stub.addRunner(runner);
+      req.reply(runner);
+    } else if (stub.isEnabledFor('GET_DATASETS')) {
+      req.continue((res) => stub.addRunner(res.body));
+    }
+  }).as(alias);
+  return alias;
+};
+
+// Parameters:
+//   - options: dict with properties:
+//     - validateRequest (optional): a function, taking the request object as argument, that can be used to perform
+//       cypress checks on the content of the intercepted query
+//     - customRunnerPatch (optional): data to set in the request body, you can use this option to replace the original
+//       content of the query
+const interceptUpdateRunner = (options = {}) => {
+  const alias = forgeAlias('reqUpdateRunner');
+  cy.intercept({ method: 'PATCH', url: API_REGEX.RUNNER, times: 1 }, (req) => {
+    if (options?.validateRequest) options?.validateRequest(req);
+    const runnerPatch = {
+      ...req.body,
+      ...options?.customRunnerPatch,
+    };
+    const runnerId = req.url.match(API_REGEX.RUNNER)?.[1];
+    if (stub.isEnabledFor('GET_DATASETS')) stub.patchRunner(runnerId, runnerPatch);
+    if (stub.isEnabledFor('UPDATE_DATASET')) req.reply(runnerPatch);
+  }).as(alias);
+  return alias;
+};
+
 const interceptDownloadWorkspaceFile = () => {
   const alias = forgeAlias('reqDownloadWorkspaceFile');
   cy.intercept({ method: 'GET', url: API_REGEX.FILE_DOWNLOAD, times: 1 }, (req) => {
@@ -703,6 +759,8 @@ export const apiUtils = {
   interceptRemoveDatasetAccessControl,
   interceptSetDatasetDefaultSecurity,
   interceptDeleteDataset,
+  interceptCreateRunner,
+  interceptUpdateRunner,
   interceptDownloadWorkspaceFile,
   interceptUploadWorkspaceFile,
   interceptGetOrganizationPermissions,
