@@ -28,7 +28,7 @@
     "react-dom": "^17.0.1",
     "react-fade-in": "^2.0.1",
     "react-hook-form": "^7.43.1",
-    "react-i18next": "^13.2.2",
+    "react-i18next": "^14.1.1",
     "react-idle-timer": "^5.2.0",
     "react-redux": "^7.2.5",
     "react-router-dom": "^6.10.0",
